@@ -43,15 +43,12 @@ class Car:
         self.frontal_area = frontal_area
         self.brake_force = brake_force
 
-
-
     def set_power(self, amount):
         """
         Sets the power level as a percentage, think of it as how deeply you've pressed the gas pedal
         :param amount: Required amount of power between 0 and 100 (percent)
         """
         self.power = float(amount)
-
 
     def set_brake(self, amount):
         """
@@ -60,7 +57,6 @@ class Car:
         """
         self.braking = float(amount)
 
-
     def turn_left(self, rate):
         """
         Start turning left at the specified rate
@@ -68,14 +64,12 @@ class Car:
         """
         self.yaw_rate = - float(rate)
 
-
     def turn_right(self, rate):
         """
         Start turning right at the specified rate
         :param rate: Yaw rate in degrees / second
         """
         self.yaw_rate = float(rate)
-
 
     def simulate(self, time):
         """
@@ -87,7 +81,6 @@ class Car:
 
         while self.time < end_time:
             self._simulate_step(self.STEP_SIZE)
-
 
     def _simulate_step(self, delta_T):
         # Update the state
