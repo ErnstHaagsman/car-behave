@@ -2,3 +2,4 @@ git+https://github.com/behave/behave.git#5c0dce1
 parse==1.8.2
 parse-type==0.3.4
 six==1.10.0
+PyHamcrest==1.9.0
