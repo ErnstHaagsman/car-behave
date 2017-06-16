@@ -1,4 +1,5 @@
 from behave import *
+from hamcrest import assert_that, close_to, greater_than, less_than, equal_to
 
 use_step_matcher('re')
 
@@ -36,12 +37,12 @@ def step_impl(context, speed):
 
 @then("the time should be within (?P<precision>[\d\.]+)s of (?P<time>[\d\.]+)s")
 def step_impl(context, precision, time):
-    assert abs(context.car.time - float(time)) < float(precision)
+    assert_that(context.car.time, close_to(float(time), float(precision)))
 
 
 @then("the car should be moving")
 def step_impl(context):
-    assert context.car.speed > 0
+    assert_that(context.car.speed, greater_than(0))
 
 
 @given("that the car is moving at (?P<speed>\d+) m/s")
@@ -61,7 +62,7 @@ def step_impl(context, seconds):
 
 @then("I should have traveled less than (?P<distance>\d+) meters")
 def step_impl(context, distance):
-    assert context.car.odometer < float(distance)
+    assert_that(context.car.odometer, less_than(float(distance)))
 
 
 @given("that the car's heading is (?P<heading>\d+) deg")
@@ -81,4 +82,4 @@ def step_impl(context, direction, rate, duration):
 
 @then("the car's heading should be (?P<heading>\d+) deg")
 def step_impl(context, heading):
-    assert context.car.heading == float(heading)
+    assert_that(context.car.heading, equal_to(float(heading)))
