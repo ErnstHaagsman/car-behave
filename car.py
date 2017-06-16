@@ -5,7 +5,7 @@ class Car:
     C_RR = 0.015
 
     # Coefficient of friction for tire grip
-    MU = 1.25
+    MU = 0.9
 
     # Air density in kg/m^3
     RHO = 1.2
