@@ -127,5 +127,7 @@ class Car:
 
         if self.heading > 360:
             self.heading -= 360
+        elif self.heading < 0:
+            self.heading += 360
 
         self.time += delta_T
