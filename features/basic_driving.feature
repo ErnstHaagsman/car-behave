@@ -21,7 +21,7 @@ Feature: I should be able to drive my car
     Examples:
     | power  | weight   | drag     | area      | time  | name
     | 90     | 1251     | 0.38     | 1.77      | 6.1   | old Porsche, book example
-    | 310    | 2112     | 0.24     | 0.57      | 4.4   | Tesla Model S P85
+    | 310    | 2112     | 0.24     | 0.57      | 3.9   | Tesla Model S P85 (Motor trends time)
 
 
   Scenario: The car should be able to brake

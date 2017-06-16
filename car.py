@@ -2,7 +2,10 @@ class Car:
     STEP_SIZE = 0.1
 
     # Coefficient of friction for rolling resistance
-    MU_N = 0.015
+    C_RR = 0.015
+
+    # Coefficient of friction for tire grip
+    MU = 1.25
 
     # Air density in kg/m^3
     RHO = 1.2
@@ -14,7 +17,9 @@ class Car:
         """
         Create a car to simulate.
 
-        Limitations: The car has infinite grip, and engine power is fully linear (somewhat realistic for electric cars)
+        Limitations: The car has perfect traction control and will exert exactly the tire grip limit if too much
+        power is applied (longitudinally) and infinite lateral grip. Furthermore, engine power is fully linear (somewhat
+        realistic for electric cars)
 
         :param engine_power:        The engine's power in kW
         :param weight:              The car's curb weight in kg
@@ -95,7 +100,7 @@ class Car:
 
         # Calculate longitudinal forces
         # Roll resistance
-        F_roll = self.MU_N * weight_N
+        F_roll = self.C_RR * weight_N
 
         # Air resistance
         F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(self.speed, 2)
@@ -116,11 +121,19 @@ class Car:
         # Resultant force is: + F_engine - F_air - F_roll - F_brake, where positive is forward
         force = F_engine - F_air - F_roll - F_brake
 
-        # Force = mass * acceleration, so acceleration = force / mass
-        acceleration = force / weight_N
+        # Our tires have a grip limit, determined by friction and (aerodynamic) weight
+        F_max = self.MU * weight_N
+
+        if force > F_max:
+            force = F_max
+        elif force < -F_max:
+            force = -F_max
+
+        # Force = mass * acceleration, so acceleration (m/s^2) = force (N) / mass (kg)
+        acceleration = force / self.weight
 
         # The cars new speed:
-        self.speed += acceleration
+        self.speed += acceleration * delta_T
 
         # Deal with turning
         self.heading += self.yaw_rate
