@@ -13,7 +13,7 @@ class Car:
     # Gravity on earth
     G = 9.81
 
-    def __init__(self, engine_power=270, weight=1251, drag_coefficient=0.38, frontal_area=1.77, brake_force=10_000):
+    def __init__(self, engine_power=270, weight=1251, drag_coefficient=0.38, frontal_area=1.77, brake_force=10000):
         """
         Create a car to simulate.
 
@@ -99,7 +99,7 @@ class Car:
         F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(self.speed, 2)
 
         # Engine power, needs to be multiplied by 1k to get watts from kilowatts
-        P_engine = (self.power / 100) * self.engine_power * 1_000
+        P_engine = (self.power / 100) * self.engine_power * 1000
 
         # Power = Force * Velocity, so Force = Power / Velocity.
         # To deal with v = 0, let's just say the forward force at V=0 is equal to braking force * power setting
