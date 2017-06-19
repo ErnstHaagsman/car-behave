@@ -4,10 +4,6 @@ Feature: I should be able to drive my car
   As a driver
   I want the car to be able to accelerate, brake, and turn
 
-  Scenario: The car should be able to accelerate
-    Given that the car is standing still
-    When I accelerate for 1 second
-    Then the car should be moving
 
   Scenario Outline: The car should accelerate at roughly the right rate
     If we take the car's power, weight, and aerodynamic data, we should be able
@@ -27,8 +23,6 @@ Feature: I should be able to drive my car
   Scenario: The car should be able to brake
     The UK highway code says that worst case
     scenario we need to stop from 60mph (27 m/s) in 73m
-    Some simple physics says that we need to brake
-    at -4.92 m/s^2 for 5.45s, assuming constant force
     Given that the car is moving at 27 m/s
     When I brake at 100% force
     And 10 seconds pass

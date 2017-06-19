@@ -4,17 +4,6 @@ from hamcrest import assert_that, close_to, greater_than, less_than, equal_to
 use_step_matcher('re')
 
 
-@given("that the car is standing still")
-def car_is_standing_still(context):
-    context.car.speed = 0
-
-
-@when("I accelerate for (?P<time>\d+) seconds?")
-def step_impl(context, time):
-    context.car.set_power(100)
-    context.car.simulate(time)
-
-
 @given("the car has (?P<engine_power>\d+) kw, weighs (?P<weight>\d+) kg, has a drag coefficient of (?P<drag>[\.\d]+)")
 def step_impl(context, engine_power, weight, drag):
     context.car.engine_power = float(engine_power)
@@ -38,11 +27,6 @@ def step_impl(context, speed):
 @then("the time should be within (?P<precision>[\d\.]+)s of (?P<time>[\d\.]+)s")
 def step_impl(context, precision, time):
     assert_that(context.car.time, close_to(float(time), float(precision)))
-
-
-@then("the car should be moving")
-def step_impl(context):
-    assert_that(context.car.speed, greater_than(0))
 
 
 @given("that the car is moving at (?P<speed>\d+) m/s")
