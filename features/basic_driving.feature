@@ -1,9 +1,11 @@
 # Created by Ernst.Haagsman at 6/16/2017
-Feature: I should be able to drive my car
-  In order to get me to my destination
-  As a driver
-  I want the car to be able to accelerate, brake, and turn
-
+Feature: Simulate a basic car
+  To show off how BDD works, let's create a sample project which takes the
+  classic OO car example, and supercharges it.
+  The car should take into account: engine power, basic aerodynamics, rolling
+  resistance, grip, and brake force.
+  To keep things somewhat simple, the engine will supply constant power (this is
+  not realistic, as it results in infinite Torque at 0 RPM)
 
   Scenario Outline: The car should accelerate at roughly the right rate
     If we take the car's power, weight, and aerodynamic data, we should be able
