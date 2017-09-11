@@ -1,5 +1,16 @@
+# Millimeters per inch
+import re
+
+import math
+
+MM_PER_INCH = 25.4
+
+# Millimeters per meter
+MM_PER_M = 1000
+
 class Car:
     STEP_SIZE = 0.1
+
 
     # Coefficient of friction for rolling resistance
     C_RR = 0.015
@@ -13,7 +24,13 @@ class Car:
     # Gravity on earth
     G = 9.81
 
-    def __init__(self, engine_power=270, weight=1251, drag_coefficient=0.38, frontal_area=1.77, brake_force=10000):
+    def __init__(self,
+                 weight=1251,
+                 drag_coefficient=0.38,
+                 frontal_area=1.77,
+                 brake_force=10000,
+                 tire_size='225/55R17',
+                 gear_count=6):
         """
         Create a car to simulate.
 
@@ -21,13 +38,14 @@ class Car:
         power is applied (longitudinally) and infinite lateral grip. Furthermore, engine power is fully linear (somewhat
         realistic for electric cars)
 
-        :param engine_power:        The engine's power in kW
         :param weight:              The car's curb weight in kg
         :param drag_coefficient:    Cw value (dimensionless)
         :param frontal_area:        Frontal area of the car in m^2
         :param brake_force:         Force the brakes can exert in N
+        :param tire_size:           The tire size, as written on the sidewall
         """
         # Car status
+        self.gear = 1
         self.power = 0
         self.braking = 0
         self.speed = 0
@@ -35,13 +53,93 @@ class Car:
         self.heading = 360
         self.yaw_rate = 0
         self.time = 0.0
+        self.rpm = self.get_engine_idle_rpm()
 
         # Car characteristics
-        self.engine_power = engine_power
         self.weight = weight
         self.drag_coefficient = drag_coefficient
         self.frontal_area = frontal_area
         self.brake_force = brake_force
+        self.gear_count = gear_count
+
+        # Decode the tire
+        pattern = """(\d{3})/(\d{2})R(\d{2})"""
+        match = re.match(pattern, tire_size)
+        if match:
+            self.tire_width = int(match.group(1))
+            self.tire_aspect = int(match.group(2))
+            self.rim_size = int(match.group(3))
+        else:
+            raise ValueError("Please specify a valid tire size (e.g. 255/45R18)")
+
+    def get_engine_torque(self, rpm):
+        """
+        Calculate the engine torque generated at a specified engine speed
+
+        :param rpm: {int} Input engine speed
+        :return: {float} The torque delivered from the engine in newton meters at the specified engine speed
+        """
+        return 0.0
+
+    def get_engine_idle_rpm(self):
+        return 0
+
+    def get_engine_redline_rpm(self):
+        return 7000
+
+    def get_transmission_ratio(self, gear):
+        """
+        Return the transmission ratio in a certain gear
+        :param gear:
+        :return:
+        """
+        return 1.0
+
+    def final_drive_ratio(self):
+        return 1.0
+
+    def drivetrain_losses(self):
+        return 0.15
+
+    def get_tire_force(self, width, aspect, diameter, torque):
+        """
+        Returns the force applied by the tire, as a result of a torque
+        :param int width: The width of the tire, in millimeters
+        :param int aspect: The aspect ratio of the tire, number 0-100
+        :param int diameter: The diameter of the rim, in inches
+        :param float torque: The torque applied to the wheel
+        :return: Force in newtons
+        :rtype: float
+        """
+        tirewall_height = float(width) * (float(aspect) / 100)
+        wheel_diameter = diameter * MM_PER_INCH + tirewall_height
+
+        radius = wheel_diameter / 2
+
+        # The force at the bottom of the tire is the torque (N*m) / radius (m)
+        return torque / (radius / MM_PER_M)
+
+    def get_tire_rpm(self, width, aspect, diameter, speed):
+        """
+        Returns the tire rotational speed, for a given forward speed
+        :param width: Tire width, in millimeters
+        :param aspect: The aspect ratio of the tire, number 0-100
+        :param diameter: The diameter of the rim, in inches
+        :param speed: Speed of the car in km/h
+        :return: Rotational speed of the wheel, in rpm
+        """
+
+        tirewall_height = float(width) * (float(aspect) / 100)
+        wheel_diameter = diameter * MM_PER_INCH + tirewall_height  # in mm
+
+        wheel_diameter_meters = wheel_diameter / 1000  # in m
+        wheel_circumference = math.pi * wheel_diameter_meters  # in m
+
+        meters_per_hour = speed * 1000  # from km/h to m/h
+        meters_per_minute = meters_per_hour / 60
+
+        # Return the amount of wheel circumferences (rotations) we're driving every minute
+        return meters_per_minute / wheel_circumference
 
     def set_power(self, amount):
         """
@@ -71,6 +169,14 @@ class Car:
         """
         self.yaw_rate = float(rate)
 
+    def gear_up(self):
+        if self.gear + 1 <= self.gear_count:
+            self.gear += 1
+
+    def gear_down(self):
+        if self.gear > 1:
+            self.gear -= 1
+
     def simulate(self, time):
         """
         Simulate the passing of time
@@ -98,21 +204,34 @@ class Car:
         # Air resistance
         F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(self.speed, 2)
 
-        # Engine power, needs to be multiplied by 1k to get watts from kilowatts
-        P_engine = (self.power / 100) * self.engine_power * 1000
+        # Calculate engine speed
+        wheel_rpm = self.get_tire_rpm(self.tire_width, self.tire_aspect, self.rim_size, self.speed)
+        total_transmission_ratio = self.final_drive_ratio() * self.get_transmission_ratio(self.gear)
+        engine_speed = wheel_rpm / total_transmission_ratio
 
-        # Power = Force * Velocity, so Force = Power / Velocity.
-        # To deal with v = 0, let's just say the forward force at V=0 is equal to braking force * power setting
-        if self.speed == 0.0:
-            F_engine = self.brake_force * (self.power / 100)
-        else:
-            F_engine = P_engine / self.speed
+        if engine_speed < self.get_engine_idle_rpm():
+            engine_speed = self.get_engine_idle_rpm()
+
+        # Find torque at engine
+        T_engine = self.get_engine_torque(engine_speed) * self.power
+
+        # Rev limiter
+        if engine_speed >= self.get_engine_redline_rpm():
+            T_engine = 0
+
+        self.rpm = engine_speed
+
+        # Subtract drivetrain losses to get wheel torque
+        T_wheel = T_engine * (1 - self.drivetrain_losses())
+
+        # Find force at the contact patch
+        F_wheel = self.get_tire_force(self.tire_width, self.tire_aspect, self.rim_size, T_wheel)
 
         # Brake force
         F_brake = (self.braking / 100) * self.brake_force
 
         # Resultant force is: + F_engine - F_air - F_roll - F_brake, where positive is forward
-        force = F_engine - F_air - F_roll - F_brake
+        force = F_wheel - F_air - F_roll - F_brake
 
         # Our tires have a grip limit, determined by friction and (aerodynamic) weight
         F_max = self.MU * weight_N
