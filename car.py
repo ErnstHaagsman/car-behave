@@ -202,18 +202,19 @@ class Car:
         F_roll = self.C_RR * weight_N
 
         # Air resistance
-        F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(self.speed, 2)
+        speed_ms = self.speed / 3.6 #  km/h to m/s
+        F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(speed_ms, 2)
 
         # Calculate engine speed
         wheel_rpm = self.get_tire_rpm(self.tire_width, self.tire_aspect, self.rim_size, self.speed)
         total_transmission_ratio = self.final_drive_ratio() * self.get_transmission_ratio(self.gear)
-        engine_speed = wheel_rpm / total_transmission_ratio
+        engine_speed = wheel_rpm * total_transmission_ratio
 
         if engine_speed < self.get_engine_idle_rpm():
             engine_speed = self.get_engine_idle_rpm()
 
         # Find torque at engine
-        T_engine = self.get_engine_torque(engine_speed) * self.power
+        T_engine = self.get_engine_torque(engine_speed) * (self.power / 100)
 
         # Rev limiter
         if engine_speed >= self.get_engine_redline_rpm():
@@ -221,8 +222,8 @@ class Car:
 
         self.rpm = engine_speed
 
-        # Subtract drivetrain losses to get wheel torque
-        T_wheel = T_engine * (1 - self.drivetrain_losses())
+        # Subtract drivetrain losses, and multiply by transmission ratio to get wheel torque
+        T_wheel = T_engine * (1 - self.drivetrain_losses()) * total_transmission_ratio
 
         # Find force at the contact patch
         F_wheel = self.get_tire_force(self.tire_width, self.tire_aspect, self.rim_size, T_wheel)
@@ -230,8 +231,15 @@ class Car:
         # Brake force
         F_brake = (self.braking / 100) * self.brake_force
 
-        # Resultant force is: + F_engine - F_air - F_roll - F_brake, where positive is forward
-        force = F_wheel - F_air - F_roll - F_brake
+        # Resultant force is: + F_engine - F_air - F_brake, where positive is forward
+        force = F_wheel - F_air - F_brake
+
+        # The rolling resistance is constant after its overcome
+        # Should not result in negative speed though
+        if force >= 0 and force < F_roll:
+            force = 0
+        else:
+            force -= F_roll
 
         # Our tires have a grip limit, determined by friction and (aerodynamic) weight
         F_max = self.MU * weight_N
