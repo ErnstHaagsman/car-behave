@@ -73,7 +73,7 @@ class CarSim(arcade.Window):
         arcade.render_text(self.rev_counter, 400, 300)
 
         # Draw speed
-        self.update_speed(self.car.speed)
+        self.update_speed(self.car.speed * 3.6)  # car speed is in m/s, multiply by 3.6 to get km/h
         arcade.render_text(self.speedometer, 600, 300)
 
         # Draw gear

@@ -39,20 +39,20 @@ class Car:
         realistic for electric cars)
 
         :param weight:              The car's curb weight in kg
-        :param drag_coefficient:    Cw value (dimensionless)
+        :param drag_coefficient:    Cd value (dimensionless)
         :param frontal_area:        Frontal area of the car in m^2
         :param brake_force:         Force the brakes can exert in N
         :param tire_size:           The tire size, as written on the sidewall
         """
         # Car status
         self.gear = 1
-        self.power = 0
-        self.braking = 0
-        self.speed = 0
-        self.odometer = 0
+        self.power = 0  # % throttle applied
+        self.braking = 0  # % brakes applied
+        self.speed = 0  # in m/s
+        self.odometer = 0  # in m
         self.heading = 360
-        self.yaw_rate = 0
-        self.time = 0.0
+        self.yaw_rate = 0  # in deg/sec
+        self.time = 0.0  # in seconds
         self.rpm = self.get_engine_idle_rpm()
 
         # Car characteristics
@@ -125,7 +125,7 @@ class Car:
         :param width: Tire width, in millimeters
         :param aspect: The aspect ratio of the tire, number 0-100
         :param diameter: The diameter of the rim, in inches
-        :param speed: Speed of the car in km/h
+        :param speed: Speed of the car in m/s
         :return: Rotational speed of the wheel, in rpm
         """
 
@@ -135,8 +135,7 @@ class Car:
         wheel_diameter_meters = wheel_diameter / 1000  # in m
         wheel_circumference = math.pi * wheel_diameter_meters  # in m
 
-        meters_per_hour = speed * 1000  # from km/h to m/h
-        meters_per_minute = meters_per_hour / 60
+        meters_per_minute = speed * 60  # m/s to m/min
 
         # Return the amount of wheel circumferences (rotations) we're driving every minute
         return meters_per_minute / wheel_circumference
@@ -182,11 +181,15 @@ class Car:
         Simulate the passing of time
         :param time: Time in seconds
         """
-        start_time = self.time
-        end_time = self.time + float(time)
 
-        while self.time < end_time:
-            self._simulate_step(self.STEP_SIZE)
+        if time > self.STEP_SIZE:
+            start_time = self.time
+            end_time = self.time + float(time)
+
+            while self.time < end_time:
+                self._simulate_step(self.STEP_SIZE)
+        else:
+            self._simulate_step(time)
 
     def _simulate_step(self, delta_T):
         # Update the state
@@ -202,8 +205,7 @@ class Car:
         F_roll = self.C_RR * weight_N
 
         # Air resistance
-        speed_ms = self.speed / 3.6 #  km/h to m/s
-        F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(speed_ms, 2)
+        F_air = 0.5 * self.drag_coefficient * self.frontal_area * self.RHO * pow(self.speed, 2)
 
         # Calculate engine speed
         wheel_rpm = self.get_tire_rpm(self.tire_width, self.tire_aspect, self.rim_size, self.speed)
@@ -218,6 +220,7 @@ class Car:
 
         # Rev limiter
         if engine_speed >= self.get_engine_redline_rpm():
+            self.gear_up()
             T_engine = 0
 
         self.rpm = engine_speed
@@ -232,14 +235,7 @@ class Car:
         F_brake = (self.braking / 100) * self.brake_force
 
         # Resultant force is: + F_engine - F_air - F_brake, where positive is forward
-        force = F_wheel - F_air - F_brake
-
-        # The rolling resistance is constant after its overcome
-        # Should not result in negative speed though
-        if force >= 0 and force < F_roll:
-            force = 0
-        else:
-            force -= F_roll
+        force = F_wheel - F_air - F_brake - F_roll
 
         # Our tires have a grip limit, determined by friction and (aerodynamic) weight
         F_max = self.MU * weight_N
@@ -254,6 +250,10 @@ class Car:
 
         # The cars new speed:
         self.speed += acceleration * delta_T
+
+        # No reverse gear, no negative speed
+        if self.speed < 0:
+            self.speed = 0
 
         # Deal with turning
         self.heading += self.yaw_rate

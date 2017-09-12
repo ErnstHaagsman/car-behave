@@ -2,6 +2,14 @@ from car import Car
 
 
 class BMW_540i(Car):
+    def __init__(self):
+        super().__init__(weight=1670,
+                         drag_coefficient=0.22,
+                         frontal_area=2.35,
+                         brake_force=15000,
+                         tire_size='225/55R17',
+                         gear_count=8)
+
     TORQUE_CURVE = {
         1000: 318.5,
         1100: 361.9,
