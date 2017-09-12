@@ -1,14 +1,28 @@
-from car import Car
+from car import Car, Transmission
 
+GEARS = {
+    1: 5.00,
+    2: 3.20,
+    3: 2.14,
+    4: 1.72,
+    5: 1.31,
+    6: 1.00,
+    7: 0.82,
+    8: 0.64
+}
 
 class BMW_540i(Car):
+
     def __init__(self):
         super().__init__(weight=1670,
                          drag_coefficient=0.22,
                          frontal_area=2.35,
                          brake_force=15000,
                          tire_size='225/55R17',
-                         gear_count=8)
+                         transmission=Transmission(GEARS,
+                                                   final_drive=2.93,
+                                                   drivetrain_losses=0.15,
+                                                   shift_speed=0.1))
 
     TORQUE_CURVE = {
         1000: 318.5,
@@ -87,23 +101,6 @@ class BMW_540i(Car):
         rpm_hundred = round(rpm / 100)
 
         return self.TORQUE_CURVE[int(rpm_hundred * 100)]
-
-    GEARS = {
-        1: 5.00,
-        2: 3.20,
-        3: 2.14,
-        4: 1.72,
-        5: 1.31,
-        6: 1.00,
-        7: 0.82,
-        8: 0.64
-    }
-
-    def get_transmission_ratio(self, gear):
-        return self.GEARS[gear]
-
-    def final_drive_ratio(self):
-        return 2.93
 
     def get_engine_idle_rpm(self):
         return 1100

@@ -30,7 +30,7 @@ class Car:
                  frontal_area=1.77,
                  brake_force=10000,
                  tire_size='225/55R17',
-                 gear_count=6):
+                 transmission=None):
         """
         Create a car to simulate.
 
@@ -60,7 +60,7 @@ class Car:
         self.drag_coefficient = drag_coefficient
         self.frontal_area = frontal_area
         self.brake_force = brake_force
-        self.gear_count = gear_count
+        self.transmission = transmission
 
         # Decode the tire
         pattern = """(\d{3})/(\d{2})R(\d{2})"""
@@ -86,20 +86,6 @@ class Car:
 
     def get_engine_redline_rpm(self):
         return 7000
-
-    def get_transmission_ratio(self, gear):
-        """
-        Return the transmission ratio in a certain gear
-        :param gear:
-        :return:
-        """
-        return 1.0
-
-    def final_drive_ratio(self):
-        return 1.0
-
-    def drivetrain_losses(self):
-        return 0.15
 
     def get_tire_force(self, width, aspect, diameter, torque):
         """
@@ -169,12 +155,10 @@ class Car:
         self.yaw_rate = float(rate)
 
     def gear_up(self):
-        if self.gear + 1 <= self.gear_count:
-            self.gear += 1
+        self.transmission.gear_up()
 
     def gear_down(self):
-        if self.gear > 1:
-            self.gear -= 1
+        self.transmission.gear_down()
 
     def simulate(self, time):
         """
@@ -209,8 +193,8 @@ class Car:
 
         # Calculate engine speed
         wheel_rpm = self.get_tire_rpm(self.tire_width, self.tire_aspect, self.rim_size, self.speed)
-        total_transmission_ratio = self.final_drive_ratio() * self.get_transmission_ratio(self.gear)
-        engine_speed = wheel_rpm * total_transmission_ratio
+        self.transmission.set_driveshaft_speed(wheel_rpm)
+        engine_speed = self.transmission.engine_shaft_speed
 
         if engine_speed < self.get_engine_idle_rpm():
             engine_speed = self.get_engine_idle_rpm()
@@ -226,7 +210,8 @@ class Car:
         self.rpm = engine_speed
 
         # Subtract drivetrain losses, and multiply by transmission ratio to get wheel torque
-        T_wheel = T_engine * (1 - self.drivetrain_losses()) * total_transmission_ratio
+        self.transmission.set_engine_torque(T_engine)
+        T_wheel = self.transmission.driveshaft_torque
 
         # Find force at the contact patch
         F_wheel = self.get_tire_force(self.tire_width, self.tire_aspect, self.rim_size, T_wheel)
@@ -264,3 +249,46 @@ class Car:
             self.heading += 360
 
         self.time += delta_T
+
+
+class Transmission:
+    def __init__(self, gear_ratios, final_drive, shift_speed, drivetrain_losses):
+        self.ratios = gear_ratios
+        self.final_drive = final_drive
+        self.shift_speed = shift_speed
+        self.drivetrain_losses = drivetrain_losses
+
+        self.gear_count = len(self.ratios)
+
+        # state
+        self.engine_shaft_speed = 0
+        self.driveshaft_speed = 0
+        self.engine_torque = 0
+        self.driveshaft_torque = 0
+        self.gear = 1
+
+    def _total_ratio(self):
+        return self.ratios[self.gear] * self.final_drive
+
+    def set_driveshaft_speed(self, speed):
+        """
+        :param speed: Speed in rpm
+        :return:
+        """
+        self.engine_shaft_speed = speed * self._total_ratio()
+
+    def set_engine_torque(self, torque):
+        """
+        Correctly sets the torque at the driveshaft, taking into account the gear and losses
+        :param torque: Input torque in Nm
+        :return:
+        """
+        self.driveshaft_torque = torque * self._total_ratio() * (1 - self.drivetrain_losses)
+
+    def gear_up(self):
+        if self.gear + 1 < self.gear_count:
+            self.gear += 1
+
+    def gear_down(self):
+        if self.gear > 1:
+            self.gear -= 1
