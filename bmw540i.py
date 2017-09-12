@@ -22,7 +22,7 @@ class BMW_540i(Car):
                          transmission=Transmission(GEARS,
                                                    final_drive=2.93,
                                                    drivetrain_losses=0.15,
-                                                   shift_speed=0.4))
+                                                   shift_time=0.4))
 
     TORQUE_CURVE = {
         1000: 318.5,

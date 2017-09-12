@@ -197,6 +197,7 @@ class Car:
         engine_speed = self.transmission.engine_shaft_speed
 
         if engine_speed < self.get_engine_idle_rpm():
+            self.gear_down()
             engine_speed = self.get_engine_idle_rpm()
 
         # Find torque at engine
@@ -252,10 +253,10 @@ class Car:
 
 
 class Transmission:
-    def __init__(self, gear_ratios, final_drive, shift_speed, drivetrain_losses):
+    def __init__(self, gear_ratios, final_drive, shift_time, drivetrain_losses):
         self.ratios = gear_ratios
         self.final_drive = final_drive
-        self.shift_speed = shift_speed
+        self.shift_time = shift_time
         self.drivetrain_losses = drivetrain_losses
 
         self.gear_count = len(self.ratios)
@@ -318,9 +319,9 @@ class Transmission:
     def gear_up(self):
         if self.gear + 1 < self.gear_count:
             self.gear += 1
-            self.shift_time_remains += self.shift_speed
+            self.shift_time_remains += self.shift_time
 
     def gear_down(self):
         if self.gear > 1:
             self.gear -= 1
-            self.shift_time_remains += self.shift_speed
+            self.shift_time_remains += self.shift_time
