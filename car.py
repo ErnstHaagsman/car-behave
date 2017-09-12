@@ -211,7 +211,7 @@ class Car:
 
         # Subtract drivetrain losses, and multiply by transmission ratio to get wheel torque
         self.transmission.set_engine_torque(T_engine)
-        T_wheel = self.transmission.driveshaft_torque
+        T_wheel = self.transmission.simulate_driveshaft_torque(delta_T)
 
         # Find force at the contact patch
         F_wheel = self.get_tire_force(self.tire_width, self.tire_aspect, self.rim_size, T_wheel)
@@ -261,11 +261,14 @@ class Transmission:
         self.gear_count = len(self.ratios)
 
         # state
-        self.engine_shaft_speed = 0
-        self.driveshaft_speed = 0
-        self.engine_torque = 0
-        self.driveshaft_torque = 0
+        self.engine_shaft_speed = 0  # rpm
+        self.driveshaft_speed = 0  # rpm
+        self.engine_torque = 0  # Nm
+        self.driveshaft_torque = 0  # Nm
         self.gear = 1
+
+        self.time = 0.0  # s
+        self.shift_time_remains = 0.0  # s
 
     def _total_ratio(self):
         return self.ratios[self.gear] * self.final_drive
@@ -285,10 +288,39 @@ class Transmission:
         """
         self.driveshaft_torque = torque * self._total_ratio() * (1 - self.drivetrain_losses)
 
+    def simulate_driveshaft_torque(self, dt):
+        """
+        Returns the average driveshaft torque over the specified amount of time
+
+        The driveshaft torque is 0 for any length of time that the transmission is
+        shifting. The edges are instantaneous for simplicity.
+        :param float dt: Length of time in seconds
+        :return float: Torque in Nm
+        """
+        # We only have torque when we're not shifting
+        full_torque_duration = dt - self.shift_time_remains
+
+        # The output torque should't become negative, when dt is shorter than the remaining
+        # shift time
+        if full_torque_duration < 0:
+            full_torque_duration = 0
+
+        if self.shift_time_remains:
+            self.shift_time_remains -= dt
+            if self.shift_time_remains < 0:
+                self.shift_time_remains = 0
+
+        # We have 100% of torque when not shifting, and 0% when shifting, so the average torque becomes:
+        average_torque = self.driveshaft_torque * (full_torque_duration / dt)
+
+        return average_torque
+
     def gear_up(self):
         if self.gear + 1 < self.gear_count:
             self.gear += 1
+            self.shift_time_remains += self.shift_speed
 
     def gear_down(self):
         if self.gear > 1:
             self.gear -= 1
+            self.shift_time_remains += self.shift_speed

@@ -14,15 +14,15 @@ GEARS = {
 class BMW_540i(Car):
 
     def __init__(self):
-        super().__init__(weight=1670,
-                         drag_coefficient=0.22,
+        super().__init__(weight=1740,  # curb weight, full tank, 90kg driver
+                         drag_coefficient=0.26,
                          frontal_area=2.35,
                          brake_force=15000,
                          tire_size='225/55R17',
                          transmission=Transmission(GEARS,
                                                    final_drive=2.93,
                                                    drivetrain_losses=0.15,
-                                                   shift_speed=0.1))
+                                                   shift_speed=0.4))
 
     TORQUE_CURVE = {
         1000: 318.5,

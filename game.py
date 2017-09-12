@@ -77,7 +77,7 @@ class CarSim(arcade.Window):
         arcade.render_text(self.speedometer, 600, 300)
 
         # Draw gear
-        self.update_gear(self.car.gear)
+        self.update_gear(self.car.transmission.gear)
         arcade.render_text(self.gear_label, 100, 100)
 
 
